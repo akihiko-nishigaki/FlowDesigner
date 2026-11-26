@@ -651,7 +651,11 @@ function sideEdge(e){
             <input type="checkbox" value="${k}"${crud.includes(k)?" checked":""}>${k}</label>`).join("")}</div>`}
      <label class="chk"><input id="eDash" type="checkbox"${e.dashed?" checked":""}>点線にする</label>
      <label class="chk"><input id="eBi" type="checkbox"${e.bidir?" checked":""}>両方向の矢印</label>
-     <div class="row"><button id="eSwap">向きを逆にする</button><button id="eAuto">接続位置を自動</button></div>
+     <label>つなぐ位置（始点 → 終点）</label>
+     <div class="row" style="margin-top:0">
+       ${sidePicker("eFrom", e.fromSide)}<span style="align-self:center;color:#94a3b8">→</span>${sidePicker("eTo", e.toSide)}
+     </div>
+     <div class="row"><button id="eSwap">向きを逆にする</button><button id="eAuto">位置を自動に戻す</button></div>
      <button id="delBtn">削除</button>`;
 
   $("#eLabel").oninput = ev => { e.label = ev.target.value; renderEdges(); persist(); };
@@ -679,9 +683,23 @@ function sideEdge(e){
     renderEdges(); renderSide(); persist();
   };
   $("#eAuto").onclick = () => {
-    snapshot(); delete e.fromSide; delete e.toSide; renderEdges(); persist();
+    snapshot(); delete e.fromSide; delete e.toSide; renderEdges(); renderSide(); persist();
   };
+  const setSide = (key, val) => {
+    snapshot();
+    if (val) e[key] = val; else delete e[key];
+    renderEdges(); renderSide(); persist();
+  };
+  $("#eFrom").onchange = ev => setSide("fromSide", ev.target.value);
+  $("#eTo").onchange   = ev => setSide("toSide",   ev.target.value);
   $("#delBtn").onclick = deleteSelection;
+}
+
+/* 線を枠のどの辺につなぐかの選択（空欄＝自動で近い辺） */
+function sidePicker(id, cur){
+  const opts = [["","自動"],["t","上"],["r","右"],["b","下"],["l","左"]];
+  return `<select id="${id}" style="flex:1">${opts.map(([v,ja]) =>
+    `<option value="${v}"${(cur||"") === v ? " selected" : ""}>${ja}</option>`).join("")}</select>`;
 }
 
 function sideMulti(){
@@ -1476,6 +1494,8 @@ function showHelp(){
     <dt>CRUDを付ける</dt><dd>線を選び、C/R/U/D のボタンを押す。線上に [RU] のように表示されます</dd>
     <dt>画面遷移</dt><dd>画面ノード同士をつなぐと自動で「画面遷移」の線（水色）になり、
       契機（［登録］ボタンなど）と条件を設定できます。他の線も「線の種別」で遷移に変えられます</dd>
+    <dt>つなぐ位置</dt><dd>線を引くとき、相手の枠の <b>○</b> の上で離すとその辺につながります。
+      あとから変えるときは線を選び、右パネルの「つなぐ位置（始点 → 終点）」で 上／右／下／左 を指定（自動＝近い辺に自動で付け替え）</dd>
     <dt>自動整列</dt><dd><b>自動整列</b>ボタン（<span class="kbd">Ctrl+L</span>）で、線のつながりから段に分けて並べ替え。
       横（左→右）か縦（上→下）を選べます。表示中のものが対象で、複数選択しているときはその分だけ整列します</dd>
     <dt>表示の切り替え</dt><dd>上部の選択で <b>画面遷移だけ</b> / <b>データの流れだけ</b> に絞り込み。
